@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getAllPolls, getUserCreatedPolls, getUserVotedPolls } from '../util/APIUtils';
+import { getAllPolls, getUserCreatedPolls, getUserVotedPolls,getPollById } from '../util/APIUtils';
 import Poll from './Poll';
 import { castVote } from '../util/APIUtils';
 import LoadingIndicator  from '../common/LoadingIndicator';
@@ -69,7 +69,16 @@ class PollList extends Component {
     }
 
     componentDidMount() {
-        this.loadPollList();
+        if(this.props.match.params.id){
+            getPollById(this.props.match.params.id).then(resp=>{
+                this.setState({
+                    polls : [resp]
+                })
+            })
+        }else{
+            this.loadPollList();
+        }
+        
     }
 
     componentDidUpdate(nextProps) {

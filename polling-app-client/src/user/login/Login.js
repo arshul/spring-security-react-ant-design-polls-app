@@ -32,6 +32,7 @@ class LoginForm extends Component {
         this.props.form.validateFields((err, values) => {
             if (!err) {
                 const loginRequest = Object.assign({}, values);
+                
                 login(loginRequest)
                 .then(response => {
                     localStorage.setItem(ACCESS_TOKEN, response.accessToken);

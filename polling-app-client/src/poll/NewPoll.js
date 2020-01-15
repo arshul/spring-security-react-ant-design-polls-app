@@ -33,7 +33,9 @@ class NewPoll extends Component {
         this.handlePollHoursChange = this.handlePollHoursChange.bind(this);
         this.isFormInvalid = this.isFormInvalid.bind(this);
     }
-
+    componentDidMount(){
+        console.log("hereer",this.props.user)
+    }
     addChoice(event) {
         const choices = this.state.choices.slice();        
         this.setState({
@@ -174,7 +176,7 @@ class NewPoll extends Component {
         return (
             <div className="new-poll-container">
                 <h1 className="page-title">Create Poll</h1>
-                <div className="new-poll-content">
+               {this.props.user&&this.props.user.username=="birdcomm"&&<div className="new-poll-content">
                     <Form onSubmit={this.handleSubmit} className="create-poll-form">
                         <FormItem validateStatus={this.state.question.validateStatus}
                             help={this.state.question.errorMsg} className="poll-form-row">
@@ -235,7 +237,7 @@ class NewPoll extends Component {
                                 className="create-poll-form-button">Create Poll</Button>
                         </FormItem>
                     </Form>
-                </div>    
+                </div>}
             </div>
         );
     }

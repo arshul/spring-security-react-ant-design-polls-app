@@ -1,5 +1,5 @@
 import { API_BASE_URL, POLL_LIST_SIZE, ACCESS_TOKEN } from '../constants';
-
+const uuidv1 = require('uuid/v1');
 const request = (options) => {
     const headers = new Headers({
         'Content-Type': 'application/json',
@@ -82,8 +82,36 @@ export function checkEmailAvailability(email) {
 
 export function getCurrentUser() {
     if(!localStorage.getItem(ACCESS_TOKEN)) {
-        return Promise.reject("No access token set.");
+        let uuid = uuidv1()
+        let arr = uuid.split("-")
+        // debugger
+        const signupRequest = {
+            name: arr[0],
+            email: `${uuidv1().split("-",2).join("")}@example.com`,
+            username: arr[1]+arr[2],
+            password: arr[3]+arr[4]
+        }
+        return signup(signupRequest).then(resp=>{
+            let loginRequest = {
+                password:arr[3]+arr[4],
+                usernameOrEmail: arr[1]+arr[2]
+            } 
+            return login(loginRequest).then(resp=>{
+                localStorage.setItem(ACCESS_TOKEN, resp.accessToken);
+                return request({
+                    url: API_BASE_URL + "/user/me",
+                    method: 'GET'
+                });
+            })
+        })
+        // return Promise.reject("No access token set.");
     }
+    // return new Promise((resolve, reject)=>{
+    //     let uid = localStorage.getItem("UUID")
+        
+    //     if(uid) resolve(uid)
+    //     reject(uid)
+    // })
 
     return request({
         url: API_BASE_URL + "/user/me",
@@ -114,6 +142,14 @@ export function getUserVotedPolls(username, page, size) {
 
     return request({
         url: API_BASE_URL + "/users/" + username + "/votes?page=" + page + "&size=" + size,
+        method: 'GET'
+    });
+}
+
+export function getPollById(id) {
+    
+    return request({
+        url: API_BASE_URL + "/polls/"+id,
         method: 'GET'
     });
 }

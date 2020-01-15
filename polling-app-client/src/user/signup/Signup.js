@@ -51,7 +51,7 @@ class Signup extends Component {
 
     handleSubmit(event) {
         event.preventDefault();
-    
+        
         const signupRequest = {
             name: this.state.name.value,
             email: this.state.email.value,
