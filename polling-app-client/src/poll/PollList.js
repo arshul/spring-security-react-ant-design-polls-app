@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import { getAllPolls, getUserCreatedPolls, getUserVotedPolls,getPollById } from '../util/APIUtils';
+import { getAllPolls, getUserCreatedPolls, getUserVotedPolls, getPollById } from '../util/APIUtils';
 import Poll from './Poll';
 import { castVote } from '../util/APIUtils';
-import LoadingIndicator  from '../common/LoadingIndicator';
+import LoadingIndicator from '../common/LoadingIndicator';
 import { Button, Icon, notification } from 'antd';
 import { POLL_LIST_SIZE } from '../constants';
 import { withRouter } from 'react-router-dom';
@@ -27,17 +27,18 @@ class PollList extends Component {
 
     loadPollList(page = 0, size = POLL_LIST_SIZE) {
         let promise;
-        if(this.props.username) {
-            if(this.props.type === 'USER_CREATED_POLLS') {
+        if (this.props.username) {
+            if (this.props.type === 'USER_CREATED_POLLS') {
                 promise = getUserCreatedPolls(this.props.username, page, size);
             } else if (this.props.type === 'USER_VOTED_POLLS') {
-                promise = getUserVotedPolls(this.props.username, page, size);                               
+                promise = getUserVotedPolls(this.props.username, page, size);
             }
         } else {
+            console.log("callled")
             promise = getAllPolls(page, size);
         }
 
-        if(!promise) {
+        if (!promise) {
             return;
         }
 
@@ -45,44 +46,64 @@ class PollList extends Component {
             isLoading: true
         });
 
-        promise            
-        .then(response => {
-            const polls = this.state.polls.slice();
-            const currentVotes = this.state.currentVotes.slice();
+        promise
+            .then(response => {
+                const polls = this.state.polls.slice();
+                const currentVotes = this.state.currentVotes.slice();
 
-            this.setState({
-                polls: polls.concat(response.content),
-                page: response.page,
-                size: response.size,
-                totalElements: response.totalElements,
-                totalPages: response.totalPages,
-                last: response.last,
-                currentVotes: currentVotes.concat(Array(response.content.length).fill(null)),
-                isLoading: false
-            })
-        }).catch(error => {
-            this.setState({
-                isLoading: false
-            })
-        });  
-        
+                this.setState({
+                    polls: polls.concat(response.content),
+                    page: response.page,
+                    size: response.size,
+                    totalElements: response.totalElements,
+                    totalPages: response.totalPages,
+                    last: response.last,
+                    currentVotes: currentVotes.concat(Array(response.content.length).fill(null)),
+                    isLoading: false
+                }, () => {
+                    if (this.props.match.params.id) {
+                        let search = this.props.location.search.slice(1)
+                        // console.log(search)
+                        if(search.indexOf("option")>=0 &&search.indexOf("votes")>=0){
+                            
+                            let X = search.split("&").map(x=>x.split("=")[1])
+                            var option = X[0]
+                            var votes = X[1]
+                            
+                        }
+
+                        getPollById(this.props.match.params.id).then(resp => {
+                            console.log(option,Number(votes))
+                            let choicesCopy = resp.choices.map(choice=>{
+                                if(choice.text==decodeURIComponent(option) && Number(votes)) choice.voteCount+=Number(votes)
+                                return choice
+                            })
+                            let respCopy = Object.assign({},resp)
+                            respCopy['totalVotes']= resp.totalVotes+Number(votes)
+                            respCopy['choices'] = choicesCopy
+                            let polls = this.state.polls.filter(poll=>poll.id!=resp.id)
+                            
+                            polls.unshift(respCopy)
+                            
+                            this.setState({ polls: polls });
+                        })
+                    }
+                })
+            }).catch(error => {
+                this.setState({
+                    isLoading: false
+                })
+            });
+
     }
 
     componentDidMount() {
-        if(this.props.match.params.id){
-            getPollById(this.props.match.params.id).then(resp=>{
-                this.setState({
-                    polls : [resp]
-                })
-            })
-        }else{
-            this.loadPollList();
-        }
-        
+        this.loadPollList();
+
     }
 
     componentDidUpdate(nextProps) {
-        if(this.props.isAuthenticated !== nextProps.isAuthenticated) {
+        if (this.props.isAuthenticated !== nextProps.isAuthenticated) {
             // Reset State
             this.setState({
                 polls: [],
@@ -93,7 +114,7 @@ class PollList extends Component {
                 last: true,
                 currentVotes: [],
                 isLoading: false
-            });    
+            });
             this.loadPollList();
         }
     }
@@ -114,11 +135,11 @@ class PollList extends Component {
 
     handleVoteSubmit(event, pollIndex) {
         event.preventDefault();
-        if(!this.props.isAuthenticated) {
+        if (!this.props.isAuthenticated) {
             this.props.history.push("/login");
             notification.info({
                 message: 'Polling App',
-                description: "Please login to vote.",          
+                description: "Please login to vote.",
             });
             return;
         }
@@ -132,33 +153,35 @@ class PollList extends Component {
         };
 
         castVote(voteData)
-        .then(response => {
-            const polls = this.state.polls.slice();
-            polls[pollIndex] = response;
-            this.setState({
-                polls: polls
-            });        
-        }).catch(error => {
-            if(error.status === 401) {
-                this.props.handleLogout('/login', 'error', 'You have been logged out. Please login to vote');    
-            } else {
-                notification.error({
-                    message: 'Polling App',
-                    description: error.message || 'Sorry! Something went wrong. Please try again!'
-                });                
-            }
-        });
+            .then(response => {
+                const polls = this.state.polls.slice();
+                polls[pollIndex] = response;
+                this.setState({
+                    polls: polls
+                });
+            }).catch(error => {
+                if (error.status === 401) {
+                    this.props.handleLogout('/login', 'error', 'You have been logged out. Please login to vote');
+                } else {
+                    notification.error({
+                        message: 'Polling App',
+                        description: error.message || 'Sorry! Something went wrong. Please try again!'
+                    });
+                }
+            });
     }
 
     render() {
+        console.log(this.state)
+        // debugger
         const pollViews = [];
         this.state.polls.forEach((poll, pollIndex) => {
-            pollViews.push(<Poll 
-                key={poll.id} 
+            pollViews.push(<Poll
+                key={poll.id}
                 poll={poll}
-                currentVote={this.state.currentVotes[pollIndex]} 
+                currentVote={this.state.currentVotes[pollIndex]}
                 handleVoteChange={(event) => this.handleVoteChange(event, pollIndex)}
-                handleVoteSubmit={(event) => this.handleVoteSubmit(event, pollIndex)} />)            
+                handleVoteSubmit={(event) => this.handleVoteSubmit(event, pollIndex)} />)
         });
 
         return (
@@ -168,20 +191,20 @@ class PollList extends Component {
                     !this.state.isLoading && this.state.polls.length === 0 ? (
                         <div className="no-polls-found">
                             <span>No Polls Found.</span>
-                        </div>    
-                    ): null
-                }  
+                        </div>
+                    ) : null
+                }
                 {
                     !this.state.isLoading && !this.state.last ? (
-                        <div className="load-more-polls"> 
+                        <div className="load-more-polls">
                             <Button type="dashed" onClick={this.handleLoadMore} disabled={this.state.isLoading}>
                                 <Icon type="plus" /> Load more
                             </Button>
-                        </div>): null
-                }              
+                        </div>) : null
+                }
                 {
-                    this.state.isLoading ? 
-                    <LoadingIndicator />: null                     
+                    this.state.isLoading ?
+                        <LoadingIndicator /> : null
                 }
             </div>
         );
